@@ -7,9 +7,20 @@ var TODO = {
 	},
 	
 	getAllTodoList : function(){
+
 		TODOSync.get(function(json){
 			for(i=json.length-1; i>=0; i--) {
-				appendWithTemplateEngine("#addListElements", "#todo-list", { key:json[i].id, class:'added', text:json[i].todo});
+				var completed;
+				var checked;
+				if (json[i].completed == 1) {
+					completed = "completed";
+					checked = "checked";
+				} else {
+					completed = "added";
+					checked = null;
+				}
+				console.log(completed);
+				appendWithTemplateEngine("#addListElements", "#todo-list", { key:json[i].id, class:completed, checked:checked, text:json[i].todo});
 			}
 		})
 
