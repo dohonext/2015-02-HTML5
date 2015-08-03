@@ -1,13 +1,56 @@
 var TODO = {
+	selectedIndex : 0,
 	init : function(){
 		this.getAllTodoList();
 		$('input').on('keydown', this.addList);
 		$("ul").on("click", "li  div  input[type=checkbox]", this.completeList);
 		$("ul").on("click", "li  div  .destroy", this.removeList);
+		$("#filters").on("click", this.changeStateFilter.bind(this));
 	},
 	
-	getAllTodoList : function(){
+	changeStateFilter : function(e){
+		var target = e.target;
+		var tagName = e.target.tagName.toLowerCase();
+		if(tagName == "a"){
+			var href = target.getAttribute("href");
+			if(href === "index.html"){
+				this.allView();
+			}else if (href === "active"){
+				this.activeView();
+			}else if (href === "completed"){
+				this.completedView();
+			}
+		}
+		e.preventDefault();
+	},
 
+	allView : function(){
+		document.getElementById("todo-list").className = "";
+		this.selectNavigator(0);
+		history.pushState({"method":"all"}, null, "index.html");
+	},
+
+	activeView : function(){
+		document.getElementById("todo-list").className = "all-active";
+		this.selectNavigator(1);
+		history.pushState({"method":"active"}, null, "active");
+	},
+
+	completedView : function(){
+		document.getElementById("todo-list").className = "all-completed";
+		this.selectNavigator(2);
+		history.pushState({"method":"completed"}, null, "completed");
+	},
+ 
+	selectNavigator : function(index){
+		var navigatorList = document.querySelectorAll("#filters a");
+		console.log(navigatorList);
+		navigatorList[this.selectedIndex].classList.remove("selected");
+		navigatorList[index].classList.add("selected");
+		this.selectedIndex = index;
+	},
+
+	getAllTodoList : function(){
 		TODOSync.get(function(json){
 			for(i=json.length-1; i>=0; i--) {
 				var completed;
@@ -19,7 +62,6 @@ var TODO = {
 					completed = "added";
 					checked = null;
 				}
-				console.log(completed);
 				appendWithTemplateEngine("#addListElements", "#todo-list", { key:json[i].id, class:completed, checked:checked, text:json[i].todo});
 			}
 		})
@@ -116,9 +158,23 @@ var TODO = {
 };
 
 var TODOSync = {
+	url : "http://128.199.76.9:8002/",
+	id : "dohonext/",
+	init : function(){
+		window.addEventListener("online", this.onofflineListener);
+		window.addEventListener("offline", this.onofflineListener);
+	},
+	onofflineListener : function(){
+		//			document.getElementById("header").classList[navigator.online?"remove":"add"]("offline");
+		if(navigator.onLine){
+			document.getElementById("header").classList.remove("offline");
+		}else{
+			document.getElementById("header").classList.add("offline");
+		}
+	},
 	get : function(callback){
 		var xhr = new XMLHttpRequest();
-		xhr.open("GET", "http://128.199.76.9:8002/dohonext", true);
+		xhr.open("GET", this.url+this.id, true);
 		xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded;charset=UTF-8");
 		xhr.addEventListener("load",function(e) {
 			callback(JSON.parse(xhr.responseText));
@@ -128,7 +184,7 @@ var TODOSync = {
 
 	add : function(todo, callback){
 		var xhr = new XMLHttpRequest();
-		xhr.open("PUT", "http://128.199.76.9:8002/dohonext", true);
+		xhr.open("PUT", this.url+this.id, true);
 		xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded;charset=UTF-8");
 		xhr.addEventListener("load",function(e) {
 			callback(JSON.parse(xhr.responseText));
@@ -138,7 +194,7 @@ var TODOSync = {
 
 	completed : function(param, callback){
 		var xhr = new XMLHttpRequest();
-		xhr.open("POST", "http://128.199.76.9:8002/dohonext/"+param.key, true);
+		xhr.open("POST", this.url+this.id+param.key, true);
 		xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded;charset=UTF-8");
 		xhr.addEventListener("load",function(e) {
 			callback(JSON.parse(xhr.responseText));
@@ -148,7 +204,7 @@ var TODOSync = {
 
 	remove : function(key, callback){
 		var xhr = new XMLHttpRequest();
-		xhr.open("DELETE", "http://128.199.76.9:8002/dohonext/"+key, true);
+		xhr.open("DELETE", this.url+this.id+key, true);
 		xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded;charset=UTF-8");
 		xhr.addEventListener("load",function(e) {
 			callback(JSON.parse(xhr.responseText));
@@ -159,4 +215,5 @@ var TODOSync = {
 
 window.addEventListener("load", function() {	
 	TODO.init();	
+	TODOSync.init();
 }, false);
